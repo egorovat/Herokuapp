@@ -2,20 +2,18 @@ import org.assertj.core.api.Assertions;
 import org.junit.*;
 import org.openqa.selenium.*;
 import org.openqa.selenium.chrome.ChromeDriver;
-import org.openqa.selenium.interactions.Actions;
-import java.util.List;
-
 
 public class TestSuite extends JUnitHTMLReporter {
 
     private WebDriver driver;
-    private UserActions action;
+    private LoginPage loginPage;
+    private TablePage tablePage;
+    private HoversPage hoversPage;
 
     @Before
     public void beforeTest() throws Exception {
         System.setProperty("webdriver.chrome.driver","src/main/resources/drivers/chromedriver");
         driver = new ChromeDriver();
-        action = new UserActions(driver);
     }
 
     @After
@@ -24,55 +22,61 @@ public class TestSuite extends JUnitHTMLReporter {
     @Test
     public void loginSuccessTest() {
 
-        action.loginAs("tomsmith", "SuperSecretPassword!");
-        String loginMessage = action.getLoginResultMessage();
-        Assertions.assertThat(loginMessage).isEqualTo("You logged into a secure area!");
+        loginPage = new LoginPage(driver);
+        driver.get("http://the-internet.herokuapp.com/login");
+
+        loginPage.loginAs("tomsmith", "SuperSecretPassword!");
+        Assertions.assertThat(loginPage.getLoginResultMessage()).isEqualTo("You logged into a secure area!");
     }
 
     @Test
     public void loginFailedUserNameTest() {
 
-        action.loginAs("invalidUserName", "SuperSecretPassword!");
-        String loginMessage = action.getLoginResultMessage();
-        Assertions.assertThat(loginMessage).isEqualTo("Your username is invalid!");
+        loginPage = new LoginPage(driver);
+        driver.get("http://the-internet.herokuapp.com/login");
+
+        loginPage.loginAs("invalidUserName", "SuperSecretPassword!");
+        Assertions.assertThat(loginPage.getLoginResultMessage()).isEqualTo("Your username is invalid!");
     }
 
     @Test
     public void loginFailedPasswordTest() {
 
-        action.loginAs("tomsmith", "invalidPassword");
-        String loginMessage = action.getLoginResultMessage();
-        Assertions.assertThat(loginMessage).isEqualTo("Your password is invalid!");
+        loginPage = new LoginPage(driver);
+        driver.get("http://the-internet.herokuapp.com/login");
+
+        loginPage.loginAs("tomsmith", "invalidPassword");
+        Assertions.assertThat(loginPage.getLoginResultMessage()).isEqualTo("Your password is invalid!");
     }
 
     @Test
     public void userNameShownAtHoverTest(){
 
+        hoversPage = new HoversPage(driver);
         driver.get("http://the-internet.herokuapp.com/hovers");
-        List<WebElement> avatarPictures = driver.findElements(By.className("figure"));
-        Actions action  =  new Actions(driver);
 
-        for(int i=0; i<avatarPictures.size(); i++) {
+        hoversPage.mouseOverAvatarNumber(1);
+        Assertions.assertThat(hoversPage.hoveredAvatarNameIs("user1")).isTrue();
 
-            action.moveToElement(avatarPictures.get(i)).build().perform();
-            WebElement userName = driver.findElement(By.xpath("//h5[text()='name: user" + (i+1) + "']"));
+        hoversPage.mouseOverAvatarNumber(2);
+        Assertions.assertThat(hoversPage.hoveredAvatarNameIs("user2")).isTrue();
 
-            Assertions.assertThat(userName.isDisplayed()).isTrue();
-        }
+        hoversPage.mouseOverAvatarNumber(3);
+        Assertions.assertThat(hoversPage.hoveredAvatarNameIs("user3")).isTrue();
     }
 
     @Test
     public void sortOrderVerificationTest(){
 
+        tablePage = new TablePage(driver);
         driver.get("http://the-internet.herokuapp.com/tables");
-        WebElement sortTrigger = driver.findElement(By.cssSelector("span.last-name"));
 
         //initiate sort order
-        sortTrigger.click();
-        Assertions.assertThat(action.isTableSortedByLastName()).isTrue();
+        tablePage.clickSortByLastName();
+        Assertions.assertThat(tablePage.isTableSortedByLastName()).isTrue();
 
         //change sort order
-        sortTrigger.click();
-        Assertions.assertThat(action.isTableSortedByLastName()).isTrue();
+        tablePage.clickSortByLastName();
+        Assertions.assertThat(tablePage.isTableSortedByLastName()).isTrue();
     }
 }
